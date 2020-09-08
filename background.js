@@ -1,11 +1,23 @@
 let blockList = []
+var timer = 1;
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse){
     if(request.type=="getList"){
-        console.log(blockList)
         return sendResponse(blockList)
+    } else if(request.type=="remove") {
+        let list = []
+        for(let i=0; i<blockList.length; i++){
+            if(blockList[i].site != request.link){
+                list.push(blockList[i])
+            }
+        }
+        blockList = list;
+        return sendResponse("removed")
     } else {
-        blockList.push({site: request.link, time: 10})
+        let duration = timer
+        if(request.time) duration = request.time
+        //console.log(duration)
+        blockList.push({site: request.link, time: duration})
         sendResponse(true)
     }
 })
@@ -17,12 +29,13 @@ async function init(){
     if(!tab) return
     let url = tab.url
     for(let i=0; i<blockList.length; i++){
+        ///www.facebook.com   facebook
         let isUsing = url.includes(blockList[i].site)
         if(isUsing){
             blockList[i].time--
-            chrome.browserAction.setBadgeText({text:blockList[i].time+" "})
+            chrome.browserAction.setBadgeText({text:blockList[i].time+""})
             if(blockList[i].time<=0){
-                chrome.browserAction.setBadgeText({text:blockList[i].time+" "})
+                chrome.browserAction.setBadgeText({text:"0"})
                 await removeTab(tab)
                 //console.log("tab closed")
             }
